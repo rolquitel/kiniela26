@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { Trophy, Medal, User } from 'lucide-react';
 
 export default function Leaderboard() {
@@ -10,64 +10,9 @@ export default function Leaderboard() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        // Fetch all users
-        const usersSnap = await getDocs(collection(db, 'users'));
-        const usersList = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), totalPoints: 0 }));
-
-        // Fetch all matches
-        const matchesSnap = await getDocs(collection(db, 'matches'));
-        const matchesMap = {};
-        matchesSnap.docs.forEach(doc => {
-          matchesMap[doc.id] = doc.data();
-        });
-
-        // Fetch all predictions (quinielas)
-        const quinielasSnap = await getDocs(collection(db, 'quinielas'));
-
-        // Group points by userId
-        const pointsMap = {};
-        usersList.forEach(u => {
-          pointsMap[u.id] = 0;
-        });
-
-        quinielasSnap.docs.forEach(qDoc => {
-          const qData = qDoc.data();
-          const match = matchesMap[qData.matchId];
-
-          if (match && match.status === 'finished') {
-            const finalA = match.scoreA;
-            const finalB = match.scoreB;
-            const predA = qData.predictedScoreA;
-            const predB = qData.predictedScoreB;
-
-            if (predA !== undefined && predB !== undefined && predA !== null && predB !== null) {
-              let points = 0;
-              if (predA === finalA && predB === finalB) {
-                points = 3;
-              } else {
-                const finalResult = finalA > finalB ? 'A' : finalB > finalA ? 'B' : 'Draw';
-                const predResult = predA > predB ? 'A' : predB > predA ? 'B' : 'Draw';
-                if (finalResult === predResult) {
-                  points = 1;
-                }
-              }
-              if (pointsMap[qData.userId] !== undefined) {
-                pointsMap[qData.userId] += points;
-              } else {
-                pointsMap[qData.userId] = points;
-              }
-            }
-          }
-        });
-
-        // Map calculated points back to users and sort them
-        const calculatedUsers = usersList.map(u => ({
-          ...u,
-          totalPoints: pointsMap[u.id] || 0
-        }));
-
-        calculatedUsers.sort((a, b) => b.totalPoints - a.totalPoints);
-        setUsers(calculatedUsers);
+        const q = query(collection(db, 'users'), orderBy('totalPoints', 'desc'), limit(50));
+        const querySnapshot = await getDocs(q);
+        setUsers(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
       } finally {

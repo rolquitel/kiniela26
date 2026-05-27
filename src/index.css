@@ -1146,7 +1146,7 @@ button {
   color: var(--primary-accent);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   /* Container Padding */
   .container {
     padding: 0 1.25rem;
@@ -1164,13 +1164,13 @@ button {
     position: absolute;
     top: 100%;
     right: 0;
-    width: 280px;
+    width: 250px;
     max-width: 100vw;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 0 0 0 20px;
-    padding: 2rem;
-    gap: 1.5rem;
+    padding: 1.5rem;
+    gap: 1rem;
     align-items: flex-start;
     box-shadow: -10px 15px 30px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(20px);
@@ -1194,13 +1194,29 @@ button {
     }
   }
 
+  .nav-link {
+    font-size: 0.9rem !important;
+    padding: 0.4rem 0 !important;
+    width: 100%;
+  }
+
+  .nav-links .btn-primary,
+  .nav-links .btn-outline {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.85rem !important;
+    border-radius: 8px !important;
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
+
   .nav-user {
     border-left: none;
     padding-left: 0;
     width: 100%;
     justify-content: space-between;
     border-top: 1px solid var(--border);
-    padding-top: 1.25rem;
+    padding-top: 1rem;
     margin-top: 0.5rem;
   }
 
