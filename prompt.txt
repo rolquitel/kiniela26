@@ -1,0 +1,41 @@
+Crear una aplicación web para una quiniela del mundial de futbol de 2026. Debe tener manejo de usuarios, partidos, quinielas y puntos. 
+
+El usuario debe poder registrarse, iniciar sesión, ver los partidos, hacer sus quinielas y ver sus puntos. 
+
+Se debe tener un administrador que pueda agregar partidos, agregar usuarios, agregar puntos y ver las quinielas. 
+
+Se obtienen 3 puntos si se acierta el marcador del partido y 1 punto si se acierta el resultado (ganador o empate). 
+
+Se debe tener un sistema de visualización para mostrar los usuarios ordenados por puntos. 
+
+Las predicciones se pueden hacer hasta 1 hora antes del partido.    
+
+Crear un diseño moderno y atractivo para la aplicación.  
+
+La base de datos debe tener las siguientes tablas: 
+
+- Usuarios
+- Partidos con su sede, fecha y hora
+- Quinielas
+- Puntos
+- Equipos con su nombre y bandera
+
+Utilizar firebase como base de datos y autenticación. Así como para el hosting.
+
+
+Agrega a la página de administración una opción para poblar la base de datos con los partidos del mundial de futbol de 2026. Incluye los nombres de los equipos en español, asi como sus banderas.
+
+Agrega a la página de administración una opción para agregar usuarios manualmente. Con su correo, contraseña y nombre.
+
+Agrega la funcionalidad de que cuando se crea un usuario, se cree su quiniela con todos los partidos del mundial de futbol de 2026. Con los marcadores en 0.    
+
+Agrega en la página de administración una opción para actualizar los marcadores de los partidos.  
+
+
+La opción de 'Carga de Datos Mundial 2026' debe cargar TODOS los partidos y equipos del mundial de futbol de 2026. Los partidos deben tener su fecha, hora y sede. Los equipos deben tener su nombre y bandera. La hora debe ser del horario central de México.  
+
+
+Falta la funcionalidad de poder los resultados de los partidos. Tampoco se muestran los partidos en la página principal. Y no hay forma de crear y editar la quiniela. 
+
+
+
