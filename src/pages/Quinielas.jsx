@@ -111,7 +111,7 @@ export default function Quinielas() {
   return (
     <div className="quinielas-page animate-fade-in">
       <div className="section-header">
-        <h1>Mis Quinielas</h1>
+        <h1>Mi Quiniela</h1>
         <p>Edita tus predicciones activas y revisa tu historial de puntos</p>
       </div>
 

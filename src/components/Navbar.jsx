@@ -23,7 +23,7 @@ export default function Navbar() {
       <div className="container nav-content">
         <Link to="/" className="nav-logo" onClick={() => setMenuOpen(false)}>
           <Trophy size={32} className="logo-icon" />
-          <span>KINIE<span>26</span></span>
+          <span>KINIELA<span>26</span></span>
         </Link>
 
         <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
@@ -39,7 +39,7 @@ export default function Navbar() {
               </Link>
               <Link to="/quinielas" className="nav-link" onClick={() => setMenuOpen(false)}>
                 <User size={20} />
-                <span>Mis Quinielas</span>
+                <span>Mi Quiniela</span>
               </Link>
               <Link to="/leaderboard" className="nav-link" onClick={() => setMenuOpen(false)}>
                 <ListOrdered size={20} />
