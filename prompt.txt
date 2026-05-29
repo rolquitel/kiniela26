@@ -54,3 +54,11 @@ Hacer que la interfaz sea responsiva para que se muestre correctamente en dispos
 
 
 En el telefono si se oculta el menú pero tarda muchisimo al cargar los datos. En la version de escritorio funciona correctamente, solo que al  reducir el tamaño no se oculta el menú y los botones se ven muy grandes.
+
+
+al subirlos a github quiero que se pueda ver en el hosting que github proporciona, actualmente al acceder a la pagina publicada para el proyecto (https://rolquitel.github.io/kiniela26/) se muestra una página en blanco
+
+
+Agrega una sección en la que se muestren todos los juegos en una tabla con su fecha, hora, equipos y resultados; al seleccionar un juego se muestren las quinielas de todos los usuarios para ese juego. Adicionalmente, agregar una sección en donde se muestren todos los usuarios y sus puntos; al seleccionar un usuario se muestren sus quinielas, mostrando los puntos obtenidos en cada juego y el total de puntos obtenidos. Obviamente, todo eso es solo de lectura. Agrega también un boton de ayuda, donde se muestran las reglas del juego (tiempo para hacer quiniela, puntos por aciertos, etc. ), también se debe mostar un pequeño manual para el uso del sistema.  
+
+Al mostrar la quiniela por usuario, ordena los juegos por número de partido.

@@ -1269,6 +1269,24 @@ button {
 }
 
 /* Comunidad & Help Modal Styles */
+.table-responsive {
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+/* Custom Scrollbar for table-responsive */
+.table-responsive::-webkit-scrollbar {
+  width: 4px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: transparent;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
 .modal-backdrop {
   position: fixed;
   top: 0;
