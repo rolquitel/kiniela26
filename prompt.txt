@@ -39,3 +39,18 @@ Falta la funcionalidad de poder los resultados de los partidos. Tampoco se muest
 
 
 
+Lo que se muestra en proximos partidos debería de mostrarse en la pagina de quinielas, muevelo a esa pagina y en la pagina de Partidos muestra solo los partidos que ya se han jugado. Implementa la funcionalidad de editar los marcadores y estatus de los partidos desde la página de administración.  
+
+
+No se pueden editar los marcadores ni status ya que no se muestra ningun partido. Quiero que se vean todos los partidos en una tabla y que se puedan editar todos los campos; todo esto desde la pestaña Partidos de la pagina de administración
+
+
+
+
+Agrega a la página de administración una opción para borrar usuarios. Al borrar un usuario, se debe borrar su quiniela y sus puntos. Tambien debe borrar su usuario de firebase auth. Incluye una alerta de confirmacion antes de borrar.   
+
+
+Hacer que la interfaz sea responsiva para que se muestre correctamente en dispositivos moviles. En la version movil el menu debe estar oculto y aparecer al dar clic en un icono de menu que se muestra en la parte superior derecha.  
+
+
+En el telefono si se oculta el menú pero tarda muchisimo al cargar los datos. En la version de escritorio funciona correctamente, solo que al  reducir el tamaño no se oculta el menú y los botones se ven muy grandes.
