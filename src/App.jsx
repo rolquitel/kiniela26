@@ -7,6 +7,7 @@ import Signup from './pages/Signup';
 import Leaderboard from './pages/Leaderboard';
 import Admin from './pages/Admin';
 import Quinielas from './pages/Quinielas';
+import Comunidad from './pages/Comunidad';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -49,6 +50,12 @@ function App() {
               <Route path="/quinielas" element={
                 <ProtectedRoute>
                   <Quinielas />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/comunidad" element={
+                <ProtectedRoute>
+                  <Comunidad />
                 </ProtectedRoute>
               } />
               

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Trophy, LayoutDashboard, ListOrdered, User, LogOut, Shield, Menu, X } from 'lucide-react';
+import { Trophy, LayoutDashboard, ListOrdered, User, LogOut, Shield, Menu, X, HelpCircle, Users } from 'lucide-react';
+import HelpModal from './HelpModal';
 
 export default function Navbar() {
   const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   async function handleLogout() {
     try {
@@ -45,6 +47,10 @@ export default function Navbar() {
                 <ListOrdered size={20} />
                 <span>Leaderboard</span>
               </Link>
+              <Link to="/comunidad" className="nav-link" onClick={() => setMenuOpen(false)}>
+                <Users size={20} />
+                <span>Comunidad</span>
+              </Link>
               {userData?.isAdmin && (
                 <Link to="/admin" className="nav-link admin-link" onClick={() => setMenuOpen(false)}>
                   <Shield size={20} />
@@ -53,6 +59,9 @@ export default function Navbar() {
               )}
               <div className="nav-user">
                 <span className="user-points">{userData?.totalPoints || 0} pts</span>
+                <button onClick={() => setHelpOpen(true)} className="help-btn" title="Ayuda">
+                  <HelpCircle size={20} />
+                </button>
                 <button onClick={handleLogout} className="logout-btn" title="Logout">
                   <LogOut size={20} />
                 </button>
@@ -66,6 +75,7 @@ export default function Navbar() {
           )}
         </div>
       </div>
+      <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
     </nav>
   );
 }
