@@ -97,6 +97,16 @@ export default function Comunidad() {
       );
       const qSnap = await getDocs(q);
       const preds = qSnap.docs.map(doc => doc.data());
+      
+      // Sort predictions by match number
+      preds.sort((a, b) => {
+        const matchA = matches.find(m => m.id === a.matchId);
+        const matchB = matches.find(m => m.id === b.matchId);
+        const numA = matchA ? Number(matchA.matchNumber) || 0 : 0;
+        const numB = matchB ? Number(matchB.matchNumber) || 0 : 0;
+        return numA - numB;
+      });
+
       setUserPredictions(preds);
     } catch (err) {
       console.error("Error fetching user predictions:", err);
