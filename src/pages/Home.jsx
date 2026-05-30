@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import MatchCard from '../components/MatchCard';
 
 export default function Home() {
@@ -20,14 +20,15 @@ export default function Home() {
         teamsSnap.docs.forEach(doc => teamsData[doc.id] = doc.data());
         setTeams(teamsData);
 
-        const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('date')));
+        const matchesSnap = await getDocs(collection(db, 'matches'));
         const matchesData = matchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+        // Sort matches by date descending (most recent first), and if dates are equal, by time descending
         matchesData.sort((a, b) => {
-          if (a.date === b.date) {
-            return a.time.localeCompare(b.time);
+          if (b.date === a.date) {
+            return b.time.localeCompare(a.time);
           }
-          return 0;
+          return b.date.localeCompare(a.date);
         });
 
         setMatches(matchesData);
