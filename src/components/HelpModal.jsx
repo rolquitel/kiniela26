@@ -20,14 +20,14 @@ export default function HelpModal({ isOpen, onClose }) {
         </div>
 
         <div className="modal-tabs">
-          <button 
+          <button
             className={`modal-tab-btn ${activeTab === 'rules' ? 'active' : ''}`}
             onClick={() => setActiveTab('rules')}
           >
             <Trophy size={16} />
             Reglas del Juego
           </button>
-          <button 
+          <button
             className={`modal-tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
             onClick={() => setActiveTab('manual')}
           >
@@ -46,7 +46,7 @@ export default function HelpModal({ isOpen, onClose }) {
                 <div className="help-text-box">
                   <h3>Cierre de Pronósticos</h3>
                   <p>
-                    Tienes hasta **1 hora antes** de la hora oficial del partido para registrar o modificar tu quiniela. 
+                    Tienes hasta <strong>1 hora antes</strong> de la hora oficial del partido para registrar o modificar tu quiniela.
                     Pasado ese tiempo, las predicciones se bloquean y no se pueden modificar bajo ninguna circunstancia.
                   </p>
                 </div>
@@ -61,16 +61,16 @@ export default function HelpModal({ isOpen, onClose }) {
                   <p>Los puntos se otorgan automáticamente cuando un partido finaliza:</p>
                   <ul className="help-list mt-2">
                     <li>
-                      <span className="badge-pts success">3 Puntos</span> <strong>Marcador Exacto:</strong> 
-                      Si aciertas el resultado exacto y goles de ambos equipos (ej. pronosticaste 2-1 y el juego termina 2-1).
+                      <span className="badge-pts success">3 Puntos</span> <strong>Marcador Exacto:</strong>
+                      <p>Si aciertas el resultado exacto y goles de ambos equipos (ej. pronosticaste 2-1 y el juego termina 2-1).</p>
                     </li>
                     <li>
-                      <span className="badge-pts info">1 Punto</span> <strong>Resultado General:</strong> 
-                      Si aciertas al ganador (o empate) pero no los goles exactos (ej. pronosticaste 1-0, el juego termina 3-1; o pronosticaste 1-1 y termina 2-2).
+                      <span className="badge-pts info">1 Punto</span> <strong>Resultado General:</strong>
+                      <p>Si aciertas al ganador (o empate) pero no los goles exactos (ej. pronosticaste 1-0, el juego termina 3-1; o pronosticaste 1-1 y termina 2-2).</p>
                     </li>
                     <li>
-                      <span className="badge-pts danger">0 Puntos</span> <strong>Sin Aciertos:</strong> 
-                      Si no aciertas ni el ganador ni el empate.
+                      <span className="badge-pts danger">0 Puntos</span> <strong>Sin Aciertos:</strong>
+                      <p>Si no aciertas ni el ganador ni el empate.</p>
                     </li>
                   </ul>
                 </div>
@@ -102,7 +102,7 @@ export default function HelpModal({ isOpen, onClose }) {
                 <div className="manual-item">
                   <h4>👥 Comunidad</h4>
                   <p>
-                    Explora todos los juegos en una tabla interactiva para ver qué pronosticaron otros usuarios. 
+                    Explora todos los juegos en una tabla interactiva para ver qué pronosticaron otros usuarios.
                     También puedes consultar el perfil de lectura de cualquier usuario para auditar sus quinielas juego por juego.
                   </p>
                 </div>

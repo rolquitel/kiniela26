@@ -57,11 +57,12 @@ export default function Navbar() {
                   <span>Admin</span>
                 </Link>
               )}
+              <button onClick={() => { setHelpOpen(true); setMenuOpen(false); }} className="nav-link help-nav-btn">
+                <HelpCircle size={20} />
+                <span>Ayuda</span>
+              </button>
               <div className="nav-user">
                 <span className="user-points">{userData?.totalPoints || 0} pts</span>
-                <button onClick={() => setHelpOpen(true)} className="help-btn" title="Ayuda">
-                  <HelpCircle size={20} />
-                </button>
                 <button onClick={handleLogout} className="logout-btn" title="Logout">
                   <LogOut size={20} />
                 </button>

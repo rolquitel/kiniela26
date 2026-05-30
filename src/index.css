@@ -1508,25 +1508,33 @@ button {
 }
 
 /* Navbar Help Button Styles */
-.help-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+button.nav-link.help-nav-btn {
+  background: none;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s;
-  margin-right: 0.5rem;
+  font-family: inherit;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.help-btn:hover {
-  background: rgba(170, 59, 255, 0.1);
-  color: var(--primary-accent);
-  border-color: var(--primary-accent);
+/* Explicit rules to force lucide-react icons inside buttons to render properly */
+.help-nav-btn svg,
+.modal-close-btn svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  stroke: currentColor !important;
+  stroke-width: 2.25px !important;
+  fill: none !important;
+}
+
+.modal-close-btn:hover svg {
+  stroke: white !important;
 }
 
 /* Comunidad Dashboard Styles */
