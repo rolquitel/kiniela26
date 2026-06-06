@@ -29,7 +29,11 @@ dist-ssr
 
 # PocketBase
 pocketbase
+pocketbase.exe
 pb_data/
 .env
 .env.local
+
+# Lock files (platform-specific, regenerar en cada OS)
+package-lock.json
 
