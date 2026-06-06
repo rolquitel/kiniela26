@@ -1,8 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '../firebase';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import pb from '../pocketbase';
 
 const AuthContext = createContext();
 
@@ -16,42 +14,43 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null);
 
   async function signup(email, password, displayName) {
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    const user = res.user;
-    
-    // Create user document in Firestore
-    const userDoc = {
-      uid: user.uid,
-      email: user.email,
-      displayName: displayName,
-      totalPoints: 0,
-      isAdmin: false, // Default to false
-      createdAt: new Date().toISOString()
-    };
-    
-    await setDoc(doc(db, "users", user.uid), userDoc);
-    await updateProfile(user, { displayName });
-    
-    // Auto-generate quinielas for all existing matches
-    await createQuinielaForUser(user.uid);
-    
+    // 1. Create the user record in PocketBase
+    const user = await pb.collection('users').create({
+      email: email,
+      password: password,
+      passwordConfirm: password,
+      displayname: displayName,
+      name: displayName, // Map to standard 'name' field too
+      totalpoints: 0,
+      isadmin: false
+    });
+
+    // 2. Authenticate the newly created user
+    await pb.collection('users').authWithPassword(email, password);
+
+    // 3. Auto-generate quinielas for all existing matches
+    await createQuinielaForUser(user.id);
+
     return user;
   }
 
   async function createQuinielaForUser(userId) {
     try {
-      const matchesSnap = await getDocs(collection(db, "matches"));
+      const matches = await pb.collection('matches').getFullList({
+        sort: '+matchnumber'
+      });
       const batch = [];
-      matchesSnap.docs.forEach(matchDoc => {
-        const quinielaId = `${userId}_${matchDoc.id}`;
-        batch.push(setDoc(doc(db, "quinielas", quinielaId), {
-          userId: userId,
-          matchId: matchDoc.id,
-          predictedScoreA: 0,
-          predictedScoreB: 0,
-          pointsEarned: null,
-          updatedAt: new Date().toISOString()
-        }));
+      matches.forEach(match => {
+        batch.push(
+          pb.collection('quinielas').create({
+            userid: userId,
+            matchid: match.id,
+            predictedscorea: 0,
+            predictedscoreb: 0,
+            pointsearned: null,
+            updatedat: new Date().toISOString()
+          })
+        );
       });
       await Promise.all(batch);
     } catch (err) {
@@ -60,29 +59,58 @@ export function AuthProvider({ children }) {
   }
 
   function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+    return pb.collection('users').authWithPassword(email, password);
   }
 
   function logout() {
-    return signOut(auth);
+    pb.authStore.clear();
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUserData(docSnap.data());
-        }
+    // Initial state setup
+    const model = pb.authStore.model;
+    if (model) {
+      setCurrentUser({
+        uid: model.id,
+        email: model.email,
+        displayName: model.displayname || model.name
+      });
+      setUserData({
+        ...model,
+        isAdmin: model.isadmin || false,
+        totalPoints: model.totalpoints || 0
+      });
+    } else {
+      setCurrentUser(null);
+      setUserData(null);
+    }
+    setLoading(false);
+
+    // Listen for auth state changes (login, logout, token refresh)
+    const unsubscribe = pb.authStore.onChange((token, model) => {
+      if (model) {
+        setCurrentUser({
+          uid: model.id,
+          email: model.email,
+          displayName: model.displayname || model.name
+        });
+        setUserData({
+          ...model,
+          isAdmin: model.isadmin || false,
+          totalPoints: model.totalpoints || 0
+        });
       } else {
+        setCurrentUser(null);
         setUserData(null);
       }
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const value = {

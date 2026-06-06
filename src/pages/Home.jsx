@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import pb from '../pocketbase';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import MatchCard from '../components/MatchCard';
 
 export default function Home() {
@@ -15,13 +14,29 @@ export default function Home() {
     async function fetchData() {
       setLoading(true);
       try {
-        const teamsSnap = await getDocs(collection(db, 'teams'));
+        // Fetch Teams
+        const teamsList = await pb.collection('teams').getFullList();
         const teamsData = {};
-        teamsSnap.docs.forEach(doc => teamsData[doc.id] = doc.data());
+        teamsList.forEach(item => {
+          teamsData[item.id] = { id: item.id, name: item.name, flagUrl: item.flagurl };
+        });
         setTeams(teamsData);
 
-        const matchesSnap = await getDocs(collection(db, 'matches'));
-        const matchesData = matchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Fetch Matches
+        const matchesList = await pb.collection('matches').getFullList();
+        const matchesData = matchesList.map(item => ({
+          id: item.id,
+          matchNumber: item.matchnumber,
+          teamAId: item.teamaid,
+          teamBId: item.teambid,
+          venue: item.venue,
+          date: item.date,
+          time: item.time,
+          status: item.status,
+          scoreA: item.scorea,
+          scoreB: item.scoreb,
+          stage: item.stage
+        }));
 
         // Sort matches by date descending (most recent first), and if dates are equal, by time descending
         matchesData.sort((a, b) => {
@@ -33,11 +48,22 @@ export default function Home() {
 
         setMatches(matchesData);
 
+        // Fetch current user predictions
         if (currentUser) {
-          const quinielasSnap = await getDocs(query(collection(db, 'quinielas'), where('userId', '==', currentUser.uid)));
+          const quinielasList = await pb.collection('quinielas').getFullList({
+            filter: `userid = "${currentUser.uid}"`
+          });
           const quinielasData = {};
-          quinielasSnap.docs.forEach(doc => {
-            quinielasData[doc.data().matchId] = doc.data();
+          quinielasList.forEach(item => {
+            quinielasData[item.matchid] = {
+              id: item.id,
+              userId: item.userid,
+              matchId: item.matchid,
+              predictedScoreA: item.predictedscorea,
+              predictedScoreB: item.predictedscoreb,
+              pointsEarned: item.pointsearned,
+              updatedAt: item.updatedat
+            };
           });
           setUserQuinielas(quinielasData);
         }

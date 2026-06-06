@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import pb from '../pocketbase';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
 import MatchCard from '../components/MatchCard';
 
 export default function Quinielas() {
@@ -18,14 +17,28 @@ export default function Quinielas() {
     async function fetchData() {
       try {
         // Fetch Teams
-        const teamsSnap = await getDocs(collection(db, 'teams'));
+        const teamsList = await pb.collection('teams').getFullList();
         const teamsData = {};
-        teamsSnap.docs.forEach(doc => teamsData[doc.id] = doc.data());
+        teamsList.forEach(item => {
+          teamsData[item.id] = { id: item.id, name: item.name, flagUrl: item.flagurl };
+        });
         setTeams(teamsData);
 
         // Fetch Matches
-        const matchesSnap = await getDocs(collection(db, 'matches'));
-        const matchesData = matchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const matchesList = await pb.collection('matches').getFullList();
+        const matchesData = matchesList.map(item => ({
+          id: item.id,
+          matchNumber: item.matchnumber,
+          teamAId: item.teamaid,
+          teamBId: item.teambid,
+          venue: item.venue,
+          date: item.date,
+          time: item.time,
+          status: item.status,
+          scoreA: item.scorea,
+          scoreB: item.scoreb,
+          stage: item.stage
+        }));
 
         matchesData.sort((a, b) => {
           if (a.date === b.date) {
@@ -36,19 +49,25 @@ export default function Quinielas() {
         setMatches(matchesData);
 
         // Fetch User Quinielas
-        const q = query(
-          collection(db, 'quinielas'),
-          where('userId', '==', currentUser.uid)
-        );
-        const qSnap = await getDocs(q);
+        const quinielasList = await pb.collection('quinielas').getFullList({
+          filter: `userid = "${currentUser.uid}"`
+        });
         const quinielasMap = {};
-        qSnap.docs.forEach(doc => {
-          quinielasMap[doc.data().matchId] = doc.data();
+        quinielasList.forEach(item => {
+          quinielasMap[item.matchid] = {
+            id: item.id,
+            userId: item.userid,
+            matchId: item.matchid,
+            predictedScoreA: item.predictedscorea,
+            predictedScoreB: item.predictedscoreb,
+            pointsEarned: item.pointsearned,
+            updatedAt: item.updatedat
+          };
         });
         setUserQuinielas(quinielasMap);
 
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
@@ -74,25 +93,41 @@ export default function Quinielas() {
 
     setSubmitting(matchId);
     try {
-      const quinielaId = `${currentUser.uid}_${matchId}`;
-      await setDoc(doc(db, "quinielas", quinielaId), {
-        userId: currentUser.uid,
-        matchId: matchId,
-        predictedScoreA: parseInt(scoreA),
-        predictedScoreB: parseInt(scoreB),
-        pointsEarned: null,
-        updatedAt: new Date().toISOString()
-      });
+      const existing = userQuinielas[matchId];
+      let updatedRecord;
+
+      const dataToSave = {
+        userid: currentUser.uid,
+        matchid: matchId,
+        predictedscorea: parseInt(scoreA),
+        predictedscoreb: parseInt(scoreB),
+        pointsearned: null,
+        updatedat: new Date().toISOString()
+      };
+
+      if (existing && existing.id) {
+        // Update existing prediction
+        updatedRecord = await pb.collection('quinielas').update(existing.id, {
+          predictedscorea: dataToSave.predictedscorea,
+          predictedscoreb: dataToSave.predictedscoreb,
+          pointsearned: null,
+          updatedat: dataToSave.updatedat
+        });
+      } else {
+        // Create new prediction
+        updatedRecord = await pb.collection('quinielas').create(dataToSave);
+      }
 
       setUserQuinielas(prev => ({
         ...prev,
         [matchId]: {
-          userId: currentUser.uid,
-          matchId: matchId,
-          predictedScoreA: parseInt(scoreA),
-          predictedScoreB: parseInt(scoreB),
-          pointsEarned: null,
-          updatedAt: new Date().toISOString()
+          id: updatedRecord.id,
+          userId: updatedRecord.userid,
+          matchId: updatedRecord.matchid,
+          predictedScoreA: updatedRecord.predictedscorea,
+          predictedScoreB: updatedRecord.predictedscoreb,
+          pointsEarned: updatedRecord.pointsearned,
+          updatedAt: updatedRecord.updatedat
         }
       }));
     } catch (err) {

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import pb from '../pocketbase';
 import { Trophy, Medal, User } from 'lucide-react';
 
 export default function Leaderboard() {
@@ -10,9 +9,15 @@ export default function Leaderboard() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const q = query(collection(db, 'users'), orderBy('totalPoints', 'desc'), limit(50));
-        const querySnapshot = await getDocs(q);
-        setUsers(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const querySnapshot = await pb.collection('users').getList(1, 50, {
+          sort: '-totalpoints'
+        });
+        setUsers(querySnapshot.items.map(item => ({
+          id: item.id,
+          email: item.email,
+          displayName: item.displayname || item.name || 'Usuario',
+          totalPoints: item.totalpoints || 0
+        })));
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
       } finally {

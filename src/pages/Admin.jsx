@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '../firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, getDoc, setDoc } from 'firebase/firestore';
+import pb from '../pocketbase';
 import { Plus, Trash2, Save, Trophy, Calendar, Database, UserPlus, Users as UsersIcon } from 'lucide-react';
-import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useAuth } from '../contexts/AuthContext';
 import { WORLD_CUP_2026_DATA, TEAM_FLAGS } from '../data/wc2026';
 
@@ -32,13 +29,27 @@ export default function Admin() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const teamsSnap = await getDocs(collection(db, 'teams'));
-      const teamsArr = teamsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Fetch Teams
+      const teamsList = await pb.collection('teams').getFullList();
+      const teamsArr = teamsList.map(item => ({ id: item.id, name: item.name, flagUrl: item.flagurl }));
       setTeams(teamsArr);
 
       if (activeTab === 'matches') {
-        const matchesSnap = await getDocs(collection(db, 'matches'));
-        const matchesArr = matchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Fetch Matches
+        const matchesList = await pb.collection('matches').getFullList();
+        const matchesArr = matchesList.map(item => ({
+          id: item.id,
+          matchNumber: item.matchnumber,
+          teamAId: item.teamaid,
+          teamBId: item.teambid,
+          venue: item.venue,
+          date: item.date,
+          time: item.time,
+          status: item.status,
+          scoreA: item.scorea,
+          scoreB: item.scoreb,
+          stage: item.stage
+        }));
         matchesArr.sort((a, b) => {
           if (a.date === b.date) {
             return a.time.localeCompare(b.time);
@@ -49,18 +60,26 @@ export default function Admin() {
       }
 
       if (activeTab === 'users') {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        setUsers(usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        // Fetch Users
+        const usersList = await pb.collection('users').getFullList({
+          sort: '-totalpoints'
+        });
+        setUsers(usersList.map(item => ({
+          id: item.id,
+          email: item.email,
+          displayName: item.displayname || item.name || 'Usuario',
+          totalPoints: item.totalpoints || 0,
+          isAdmin: item.isadmin || false
+        })));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching admin data:", err);
     } finally {
       setLoading(false);
     }
   }, [activeTab]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 
@@ -77,42 +96,41 @@ export default function Admin() {
       });
 
       // 2. Fetch existing teams to avoid duplicates
-      const existingTeamsSnap = await getDocs(collection(db, 'teams'));
+      const existingTeams = await pb.collection('teams').getFullList();
       const existingTeamsMap = {};
-      existingTeamsSnap.docs.forEach(doc => {
-        existingTeamsMap[doc.data().name] = doc.id;
+      existingTeams.forEach(t => {
+        existingTeamsMap[t.name] = t.id;
       });
 
       // 3. Create missing teams
       const teamIds = { ...existingTeamsMap };
       for (const name of uniqueTeamNames) {
         if (!teamIds[name]) {
-          // const docRef = await addDoc(collection(db, 'teams'), {
-          await setDoc(doc(db, 'teams', name), {
-            name,
-            flagUrl: TEAM_FLAGS[name] || TEAM_FLAGS["Placeholder"]
+          const createdTeam = await pb.collection('teams').create({
+            name: name,
+            flagurl: TEAM_FLAGS[name] || TEAM_FLAGS["Placeholder"]
           });
-          teamIds[name] = name;
+          teamIds[name] = createdTeam.id;
         }
       }
 
       // 4. Create matches (104 total)
-      // Note: We'll do this in chunks to avoid overwhelming Firestore or the browser
+      // PocketBase creates are fast, but we'll do them in chunks to avoid rate/browser bottlenecks
       const batchSize = 25;
       for (let i = 0; i < WORLD_CUP_2026_DATA.length; i += batchSize) {
         const chunk = WORLD_CUP_2026_DATA.slice(i, i + batchSize);
         const matchPromises = chunk.map(m => {
-          return addDoc(collection(db, 'matches'), {
-            teamAId: teamIds[m.team1],
-            teamBId: teamIds[m.team2],
+          return pb.collection('matches').create({
+            teamaid: teamIds[m.team1],
+            teambid: teamIds[m.team2],
             venue: m.venue,
             date: m.date,
             time: m.time,
             stage: m.stage,
             status: "scheduled",
-            scoreA: 0,
-            scoreB: 0,
-            matchNumber: m.matchNumber
+            scorea: 0,
+            scoreb: 0,
+            matchnumber: m.matchNumber
           });
         });
         await Promise.all(matchPromises);
@@ -132,23 +150,19 @@ export default function Admin() {
     e.preventDefault();
     setLoading(true);
     try {
-      const secondaryApp = initializeApp(db.app.options, "Secondary");
-      const secondaryAuth = getAuth(secondaryApp);
+      // Create user directly in PocketBase
+      const createdUser = await pb.collection('users').create({
+        email: newUser.email,
+        password: newUser.password,
+        passwordConfirm: newUser.password,
+        displayname: newUser.displayName,
+        name: newUser.displayName,
+        totalpoints: 0,
+        isadmin: false
+      });
 
-      const res = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.password);
-      const user = res.user;
-
-      const userDoc = {
-        uid: user.uid,
-        email: user.email,
-        displayName: newUser.displayName,
-        totalPoints: 0,
-        isAdmin: false,
-        createdAt: new Date().toISOString()
-      };
-
-      await setDoc(doc(db, "users", user.uid), userDoc);
-      await createQuinielaForUser(user.uid);
+      // Auto-generate quiniela predictions
+      await createQuinielaForUser(createdUser.id);
 
       alert(`Usuario ${newUser.displayName} creado con éxito.`);
       setNewUser({ email: '', password: '', displayName: '' });
@@ -164,33 +178,52 @@ export default function Admin() {
   async function handleAddTeam(e) {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'teams'), newTeam);
+      await pb.collection('teams').create({
+        name: newTeam.name,
+        flagurl: newTeam.flagUrl
+      });
       setNewTeam({ name: '', flagUrl: '' });
       fetchData();
     } catch (err) {
       console.error(err);
+      alert("Error al agregar equipo: " + err.message);
     }
   }
 
   async function handleAddMatch(e) {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'matches'), newMatch);
+      await pb.collection('matches').create({
+        teamaid: newMatch.teamAId,
+        teambid: newMatch.teamBId,
+        venue: newMatch.venue,
+        date: newMatch.date,
+        time: newMatch.time,
+        status: newMatch.status,
+        scorea: parseInt(newMatch.scoreA) || 0,
+        scoreb: parseInt(newMatch.scoreB) || 0,
+        matchnumber: matches.length + 1
+      });
       setNewMatch({
         teamAId: '', teamBId: '', venue: '', date: '', time: '',
         status: 'scheduled', scoreA: 0, scoreB: 0
       });
       fetchData();
-      // Optionally trigger quiniela update for all users for THIS new match
     } catch (err) {
       console.error(err);
+      alert("Error al agregar partido: " + err.message);
     }
   }
 
   async function handleDeleteMatch(id) {
     if (window.confirm('¿Eliminar partido?')) {
-      await deleteDoc(doc(db, 'matches', id));
-      fetchData();
+      try {
+        await pb.collection('matches').delete(id);
+        fetchData();
+      } catch (err) {
+        console.error(err);
+        alert("Error al eliminar partido: " + err.message);
+      }
     }
   }
 
@@ -199,13 +232,15 @@ export default function Admin() {
 
     setLoading(true);
     try {
-      // 1. Delete user's quinielas
-      const qSnap = await getDocs(query(collection(db, 'quinielas'), where('userId', '==', userId)));
-      const deletePromises = qSnap.docs.map(d => deleteDoc(doc(db, 'quinielas', d.id)));
+      // 1. Delete associated quinielas
+      const qSnap = await pb.collection('quinielas').getFullList({
+        filter: `userid = "${userId}"`
+      });
+      const deletePromises = qSnap.map(d => pb.collection('quinielas').delete(d.id));
       await Promise.all(deletePromises);
 
-      // 2. Delete user document from users collection
-      await deleteDoc(doc(db, 'users', userId));
+      // 2. Delete user record (which also removes their Auth account in PocketBase)
+      await pb.collection('users').delete(userId);
 
       alert("Usuario y sus datos asociados eliminados con éxito.");
       fetchData();
@@ -222,7 +257,17 @@ export default function Admin() {
       const oldMatch = matches.find(m => m.id === matchId);
       const oldStatus = oldMatch ? oldMatch.status : '';
 
-      await updateDoc(doc(db, 'matches', matchId), updatedMatch);
+      await pb.collection('matches').update(matchId, {
+        matchnumber: parseInt(updatedMatch.matchNumber),
+        date: updatedMatch.date,
+        time: updatedMatch.time,
+        venue: updatedMatch.venue,
+        teamaid: updatedMatch.teamAId,
+        teambid: updatedMatch.teamBId,
+        scorea: parseInt(updatedMatch.scoreA),
+        scoreb: parseInt(updatedMatch.scoreB),
+        status: updatedMatch.status
+      });
       fetchData();
 
       const newStatus = updatedMatch.status;
@@ -233,7 +278,7 @@ export default function Admin() {
             : 'El partido ya no está finalizado. ¿Deseas resetear los puntos asociados a este partido?'
         );
         if (confirmProcess) {
-          await calculatePoints(matchId, updatedMatch.scoreA, updatedMatch.scoreB, newStatus === 'finished');
+          await calculatePoints(matchId, parseInt(updatedMatch.scoreA), parseInt(updatedMatch.scoreB), newStatus === 'finished');
         }
       } else {
         alert("Partido actualizado con éxito.");
@@ -246,14 +291,15 @@ export default function Admin() {
 
   async function calculatePoints(matchId, finalA, finalB, isFinished) {
     try {
-      const qSnap = await getDocs(query(collection(db, 'quinielas'), where('matchId', '==', matchId)));
+      const qList = await pb.collection('quinielas').getFullList({
+        filter: `matchid = "${matchId}"`
+      });
       const updates = [];
 
-      for (const qDoc of qSnap.docs) {
-        const qData = qDoc.data();
-        const predA = qData.predictedScoreA;
-        const predB = qData.predictedScoreB;
-        const oldPoints = qData.pointsEarned || 0;
+      for (const qData of qList) {
+        const predA = qData.predictedscorea;
+        const predB = qData.predictedscoreb;
+        const oldPoints = qData.pointsearned || 0;
 
         let newPoints = 0;
         if (isFinished && predA !== undefined && predB !== undefined && predA !== null && predB !== null) {
@@ -269,20 +315,21 @@ export default function Admin() {
         }
 
         // Update quiniela pointsEarned
-        updates.push(updateDoc(doc(db, 'quinielas', qDoc.id), { pointsEarned: isFinished ? newPoints : null }));
+        updates.push(pb.collection('quinielas').update(qData.id, { pointsearned: isFinished ? newPoints : null }));
 
         // Adjust user totalPoints
-        const userRef = doc(db, 'users', qData.userId);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const currentTotal = userSnap.data().totalPoints || 0;
+        try {
+          const user = await pb.collection('users').getOne(qData.userid);
+          const currentTotal = user.totalpoints || 0;
           const newTotal = Math.max(0, currentTotal - oldPoints + newPoints);
-          updates.push(updateDoc(userRef, { totalPoints: newTotal }));
+          updates.push(pb.collection('users').update(user.id, { totalpoints: newTotal }));
+        } catch (uErr) {
+          console.error("Error adjusting user score:", uErr);
         }
       }
 
       await Promise.all(updates);
-      alert(isFinished ? `Puntos recalculados para ${qSnap.size} quinielas.` : `Puntos reseteados para ${qSnap.size} quinielas.`);
+      alert(isFinished ? `Puntos recalculados para ${qList.length} quinielas.` : `Puntos reseteados para ${qList.length} quinielas.`);
     } catch (err) {
       console.error(err);
       alert('Error calculando puntos: ' + err.message);
@@ -333,7 +380,7 @@ export default function Admin() {
               <div key={team.id} className="team-badge glass-card">
                 <img src={team.flagUrl} alt={team.name} className="admin-flag" />
                 <span>{team.name}</span>
-                <button className="delete-btn" onClick={() => deleteDoc(doc(db, 'teams', team.id)).then(fetchData)}><Trash2 size={16} /></button>
+                <button className="delete-btn" onClick={() => pb.collection('teams').delete(team.id).then(fetchData)}><Trash2 size={16} /></button>
               </div>
             ))}
           </div>

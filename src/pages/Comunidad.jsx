@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import pb from '../pocketbase';
 import { Calendar, Clock, User, Award, Search, Info } from 'lucide-react';
 
 export default function Comunidad() {
@@ -29,16 +28,28 @@ export default function Comunidad() {
       setLoading(true);
       try {
         // 1. Fetch Teams
-        const teamsSnap = await getDocs(collection(db, 'teams'));
+        const teamsList = await pb.collection('teams').getFullList();
         const teamsData = {};
-        teamsSnap.docs.forEach(doc => {
-          teamsData[doc.id] = doc.data();
+        teamsList.forEach(item => {
+          teamsData[item.id] = { id: item.id, name: item.name, flagUrl: item.flagurl };
         });
         setTeams(teamsData);
 
         // 2. Fetch Matches
-        const matchesSnap = await getDocs(collection(db, 'matches'));
-        const matchesData = matchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const matchesList = await pb.collection('matches').getFullList();
+        const matchesData = matchesList.map(item => ({
+          id: item.id,
+          matchNumber: item.matchnumber,
+          teamAId: item.teamaid,
+          teamBId: item.teambid,
+          venue: item.venue,
+          date: item.date,
+          time: item.time,
+          status: item.status,
+          scoreA: item.scorea,
+          scoreB: item.scoreb,
+          stage: item.stage
+        }));
         matchesData.sort((a, b) => {
           if (a.date === b.date) {
             return a.time.localeCompare(b.time);
@@ -48,8 +59,15 @@ export default function Comunidad() {
         setMatches(matchesData);
 
         // 3. Fetch Users
-        const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('totalPoints', 'desc')));
-        const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const usersList = await pb.collection('users').getFullList({
+          sort: '-totalpoints'
+        });
+        const usersData = usersList.map(item => ({
+          id: item.id,
+          email: item.email,
+          displayName: item.displayname || item.name || 'Usuario',
+          totalPoints: item.totalpoints || 0
+        }));
         setUsers(usersData);
 
         const uMap = {};
@@ -72,13 +90,18 @@ export default function Comunidad() {
     setSelectedMatch(match);
     setLoadingDetails(true);
     try {
-      const q = query(
-        collection(db, 'quinielas'),
-        where('matchId', '==', match.id)
-      );
-      const qSnap = await getDocs(q);
-      const preds = qSnap.docs.map(doc => doc.data());
-      setMatchPredictions(preds);
+      const preds = await pb.collection('quinielas').getFullList({
+        filter: `matchid = "${match.id}"`
+      });
+      setMatchPredictions(preds.map(item => ({
+        id: item.id,
+        userId: item.userid,
+        matchId: item.matchid,
+        predictedScoreA: item.predictedscorea,
+        predictedScoreB: item.predictedscoreb,
+        pointsEarned: item.pointsearned,
+        updatedAt: item.updatedat
+      })));
     } catch (err) {
       console.error("Error fetching match predictions:", err);
     } finally {
@@ -91,15 +114,22 @@ export default function Comunidad() {
     setSelectedUser(user);
     setLoadingDetails(true);
     try {
-      const q = query(
-        collection(db, 'quinielas'),
-        where('userId', '==', user.id)
-      );
-      const qSnap = await getDocs(q);
-      const preds = qSnap.docs.map(doc => doc.data());
+      const preds = await pb.collection('quinielas').getFullList({
+        filter: `userid = "${user.id}"`
+      });
       
+      const mappedPreds = preds.map(item => ({
+        id: item.id,
+        userId: item.userid,
+        matchId: item.matchid,
+        predictedScoreA: item.predictedscorea,
+        predictedScoreB: item.predictedscoreb,
+        pointsEarned: item.pointsearned,
+        updatedAt: item.updatedat
+      }));
+
       // Sort predictions by match number
-      preds.sort((a, b) => {
+      mappedPreds.sort((a, b) => {
         const matchA = matches.find(m => m.id === a.matchId);
         const matchB = matches.find(m => m.id === b.matchId);
         const numA = matchA ? Number(matchA.matchNumber) || 0 : 0;
@@ -107,7 +137,7 @@ export default function Comunidad() {
         return numA - numB;
       });
 
-      setUserPredictions(preds);
+      setUserPredictions(mappedPreds);
     } catch (err) {
       console.error("Error fetching user predictions:", err);
     } finally {
@@ -264,7 +294,7 @@ export default function Comunidad() {
             </div>
 
             {/* Details Panel for Selected Game */}
-            <div className="details-column">
+            <div className="details-column text-card-fixed-scroll">
               {selectedMatch ? (
                 <div className="glass-card details-card animate-fade-in">
                   <div className="details-header">
@@ -367,7 +397,7 @@ export default function Comunidad() {
                           <td>
                             <div className="user-avatar-row">
                               <div className="avatar-xs"><User size={10} /></div>
-                              <span>{user.displayName || user.email}</span>
+                              <span>{user.displayName}</span>
                             </div>
                           </td>
                           <td className="text-right font-bold points-col-txt">
@@ -393,7 +423,7 @@ export default function Comunidad() {
                   <div className="details-header user-details-header">
                     <div className="avatar-lg"><User size={28} /></div>
                     <div className="user-details-title">
-                      <h3>{selectedUser.displayName || selectedUser.email}</h3>
+                      <h3>{selectedUser.displayName}</h3>
                       <p className="text-muted text-sm">Puntaje Total: <strong>{selectedUser.totalPoints || 0} puntos</strong></p>
                     </div>
                   </div>
