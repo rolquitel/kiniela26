@@ -39,20 +39,16 @@ export function AuthProvider({ children }) {
       const matches = await pb.collection('matches').getFullList({
         sort: '+matchnumber'
       });
-      const batch = [];
-      matches.forEach(match => {
-        batch.push(
-          pb.collection('quinielas').create({
-            userid: userId,
-            matchid: match.id,
-            predictedscorea: 0,
-            predictedscoreb: 0,
-            pointsearned: null,
-            updatedat: new Date().toISOString()
-          })
-        );
-      });
-      await Promise.all(batch);
+      for (const match of matches) {
+        await pb.collection('quinielas').create({
+          userid: userId,
+          matchid: match.id,
+          predictedscorea: 0,
+          predictedscoreb: 0,
+          pointsearned: null,
+          updatedat: new Date().toISOString()
+        }, { requestKey: null });
+      }
     } catch (err) {
       console.error("Error creating auto-quiniela:", err);
     }

@@ -109,31 +109,25 @@ export default function Admin() {
           const createdTeam = await pb.collection('teams').create({
             name: name,
             flagurl: TEAM_FLAGS[name] || TEAM_FLAGS["Placeholder"]
-          });
+          }, { requestKey: null });
           teamIds[name] = createdTeam.id;
         }
       }
 
-      // 4. Create matches (104 total)
-      // PocketBase creates are fast, but we'll do them in chunks to avoid rate/browser bottlenecks
-      const batchSize = 25;
-      for (let i = 0; i < WORLD_CUP_2026_DATA.length; i += batchSize) {
-        const chunk = WORLD_CUP_2026_DATA.slice(i, i + batchSize);
-        const matchPromises = chunk.map(m => {
-          return pb.collection('matches').create({
-            teamaid: teamIds[m.team1],
-            teambid: teamIds[m.team2],
-            venue: m.venue,
-            date: m.date,
-            time: m.time,
-            stage: m.stage,
-            status: "scheduled",
-            scorea: 0,
-            scoreb: 0,
-            matchnumber: m.matchNumber
-          });
-        });
-        await Promise.all(matchPromises);
+      // 4. Create matches (104 total) — secuencial para evitar auto-cancelación del SDK
+      for (const m of WORLD_CUP_2026_DATA) {
+        await pb.collection('matches').create({
+          teamaid: teamIds[m.team1],
+          teambid: teamIds[m.team2],
+          venue: m.venue,
+          date: m.date,
+          time: m.time,
+          stage: m.stage,
+          status: "scheduled",
+          scorea: 0,
+          scoreb: 0,
+          matchnumber: m.matchNumber
+        }, { requestKey: null });
       }
 
       alert("¡Base de datos poblada con éxito! Se cargaron 104 partidos.");
