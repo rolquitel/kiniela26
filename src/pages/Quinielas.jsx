@@ -60,10 +60,11 @@ export default function Quinielas() {
   async function handleSubmitQuiniela(matchId, scoreA, scoreB) {
     if (!currentUser) return;
 
-    // Check time restriction (1 hour before)
+    // Check time restriction (1 hour before in Mexico City timezone UTC-6)
     const match = matches.find(m => m.id === matchId);
     if (!match) return;
-    const matchTime = new Date(`${match.date}T${match.time}`);
+    const cleanTime = match.time.split(':').length === 2 ? `${match.time}:00` : match.time;
+    const matchTime = new Date(`${match.date}T${cleanTime}-06:00`);
     const now = new Date();
     const diff = (matchTime - now) / (1000 * 60 * 60);
 

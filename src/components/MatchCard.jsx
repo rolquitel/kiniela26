@@ -15,7 +15,8 @@ export default function MatchCard({ match, teams, currentUserQuiniela, onSave, i
     setScoreB(currentUserQuiniela?.predictedScoreB ?? '');
   }
 
-  const matchTime = new Date(`${match.date}T${match.time}`);
+  const cleanTime = match.time.split(':').length === 2 ? `${match.time}:00` : match.time;
+  const matchTime = new Date(`${match.date}T${cleanTime}-06:00`);
   const now = new Date();
   const isLocked = (matchTime - now) / (1000 * 60 * 60) < 1 || match.status === 'finished';
   const isFinished = match.status === 'finished';
